@@ -42,14 +42,17 @@ ingress:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/use-regex: "true"
     nginx.org/client-max-body-size: 100m
+  className: nginx
   hosts:
     - host: iqgeo.example.com
       paths:
-        - backend:
-            port:
-              number: 80
-          path: /
+        - path: /
           pathType: Prefix
+          backend:
+            service:
+              name: iqgeo-platform
+              port:
+                number: 80
   tls:
     - hosts:
         - iqgeo.example.com
