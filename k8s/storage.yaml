@@ -1,0 +1,30 @@
+# EFS Storage Class for IQGeo
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0f64028caf280776d
+  directoryPerms: "700"
+  gidRangeStart: "1000"
+  gidRangeEnd: "2000"
+  basePath: "/iqgeo"
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+# PVC for IQGeo shared data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: iqgeo-platform-shared-data
+  namespace: iqgeo
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 50Gi
+

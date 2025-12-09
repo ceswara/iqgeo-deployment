@@ -1,0 +1,77 @@
+# IQGeo Platform Helm Values
+# Update these values according to your environment
+
+image:
+  repository: harbor.delivery.iqgeo.cloud/iqgeo
+  pullPolicy: IfNotPresent
+  pullSecrets:
+    - harbor-registry-cred
+
+platform:
+  db:
+    host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
+    port: 5432
+    user: postgres
+    passwordSecret: iqgeo-db-secret
+    database: vytiertf
+
+  persistence:
+    storageClass: efs-sc
+    size: 50Gi
+    existingClaim: iqgeo-platform-shared-data
+
+  license:
+    secretName: iqgeo-license
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  hosts:
+    - host: iqgeo.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      storageClass: efs-sc
+      size: 8Gi
+
+memcached:
+  enabled: false
+
+ntm:
+  enabled: true
+  image:
+    repository: harbor.delivery.iqgeo.cloud/iqgeo/ntm
+    tag: latest
+  db:
+    host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
+    user: postgres
+    passwordSecret: iqgeo-db-secret
+
+resources:
+  limits:
+    cpu: "2"
+    memory: "4Gi"
+  requests:
+    cpu: "1"
+    memory: "2Gi"
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+

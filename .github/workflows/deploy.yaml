@@ -1,0 +1,131 @@
+name: Deploy IQGeo to EKS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'k8s/**'
+      - '.github/workflows/deploy.yaml'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Deployment action'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - upgrade
+          - rollback
+          - status
+
+env:
+  AWS_REGION: us-east-1
+  CLUSTER_NAME: IQGEO-POC-Cluster-tf
+  NAMESPACE: iqgeo
+
+jobs:
+  deploy:
+    name: Deploy to EKS
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        run: |
+          aws configure set region ${{ env.AWS_REGION }}
+          aws sts get-caller-identity
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+          kubectl cluster-info
+
+      - name: Create namespace
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+
+      - name: Apply storage configuration
+        run: |
+          kubectl apply -f k8s/storage.yaml
+
+      - name: Check secrets exist
+        run: |
+          echo "Checking if required secrets exist..."
+          kubectl get secret harbor-registry-cred -n ${{ env.NAMESPACE }} || echo "WARNING: harbor-registry-cred not found"
+          kubectl get secret iqgeo-db-secret -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-db-secret not found"
+          kubectl get secret iqgeo-license -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-license not found"
+
+      - name: Login to Harbor Registry
+        if: github.event.inputs.action != 'status'
+        run: |
+          echo "Logging into Harbor registry..."
+          # This will use the imagePullSecrets configured in the cluster
+
+      - name: Deploy IQGeo Platform (Helm)
+        if: github.event.inputs.action == 'deploy' || github.event.inputs.action == 'upgrade' || github.event_name == 'push'
+        run: |
+          echo "Deploying IQGeo Platform..."
+          
+          # Check if Helm chart exists locally or needs to be pulled
+          if [ -f "charts/iqgeo-platform.tgz" ]; then
+            CHART_PATH="charts/iqgeo-platform.tgz"
+          else
+            echo "Pulling IQGeo Helm chart from Harbor..."
+            helm registry login harbor.delivery.iqgeo.cloud -u ${{ secrets.HARBOR_USERNAME }} -p ${{ secrets.HARBOR_PASSWORD }} || true
+            helm pull oci://harbor.delivery.iqgeo.cloud/helm/iqgeo-platform --destination charts/ || true
+            CHART_PATH=$(ls charts/iqgeo-platform*.tgz 2>/dev/null | head -1)
+          fi
+          
+          if [ -n "$CHART_PATH" ]; then
+            helm upgrade --install iqgeo $CHART_PATH \
+              -f k8s/values.yaml \
+              --namespace ${{ env.NAMESPACE }} \
+              --create-namespace \
+              --wait \
+              --timeout 10m
+          else
+            echo "No Helm chart found. Skipping Helm deployment."
+            echo "Please place the IQGeo Helm chart in charts/ directory"
+          fi
+
+      - name: Rollback deployment
+        if: github.event.inputs.action == 'rollback'
+        run: |
+          echo "Rolling back IQGeo deployment..."
+          helm rollback iqgeo -n ${{ env.NAMESPACE }}
+
+      - name: Check deployment status
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get pods -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Services ==="
+          kubectl get svc -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n ${{ env.NAMESPACE }}
+          echo ""
+          echo "=== PVCs ==="
+          kubectl get pvc -n ${{ env.NAMESPACE }}
+
+      - name: Wait for pods to be ready
+        if: github.event.inputs.action != 'status'
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/instance=iqgeo -n ${{ env.NAMESPACE }} --timeout=300s || true
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Pod Logs ==="
+          for pod in $(kubectl get pods -n ${{ env.NAMESPACE }} -o jsonpath='{.items[*].metadata.name}'); do
+            echo "--- Logs for $pod ---"
+            kubectl logs $pod -n ${{ env.NAMESPACE }} --tail=50 || true
+          done
+          echo ""
+          echo "=== Events ==="
+          kubectl get events -n ${{ env.NAMESPACE }} --sort-by='.lastTimestamp' | tail -20
+
