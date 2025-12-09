@@ -60,19 +60,23 @@ jobs:
 
       - name: Login to Harbor Registry
         if: github.event.inputs.action != 'status'
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USERNAME }}
+          HARBOR_PASS: ${{ secrets.HARBOR_PASSWORD }}
         run: |
           echo "Logging into Harbor registry..."
-          if [ -z "${{ secrets.HARBOR_USERNAME }}" ] || [ -z "${{ secrets.HARBOR_PASSWORD }}" ]; then
+          if [ -z "$HARBOR_USER" ] || [ -z "$HARBOR_PASS" ]; then
             echo "ERROR: Harbor credentials not set in GitHub secrets"
             echo "Please add HARBOR_USERNAME and HARBOR_PASSWORD to repository secrets"
             exit 1
           fi
-          HARBOR_USER="${{ secrets.HARBOR_USERNAME }}"
-          HARBOR_PASS="${{ secrets.HARBOR_PASSWORD }}"
           echo "$HARBOR_PASS" | helm registry login harbor.delivery.iqgeo.cloud -u "$HARBOR_USER" --password-stdin
 
       - name: Deploy IQGeo Platform (Helm)
         if: github.event.inputs.action == 'deploy' || github.event.inputs.action == 'upgrade' || github.event_name == 'push'
+        env:
+          HARBOR_USER: ${{ secrets.HARBOR_USERNAME }}
+          HARBOR_PASS: ${{ secrets.HARBOR_PASSWORD }}
         run: |
           echo "Deploying IQGeo Platform..."
           
@@ -81,7 +85,7 @@ jobs:
             CHART_PATH="charts/iqgeo-platform.tgz"
           else
             echo "Pulling IQGeo Helm chart from Harbor..."
-            echo "${{ secrets.HARBOR_PASSWORD }}" | helm registry login harbor.delivery.iqgeo.cloud -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin || true
+            echo "$HARBOR_PASS" | helm registry login harbor.delivery.iqgeo.cloud -u "$HARBOR_USER" --password-stdin || true
             helm pull oci://harbor.delivery.iqgeo.cloud/helm/iqgeo-platform --destination charts/ || true
             CHART_PATH=$(ls charts/iqgeo-platform*.tgz 2>/dev/null | head -1)
           fi
