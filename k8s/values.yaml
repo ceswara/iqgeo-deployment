@@ -15,30 +15,13 @@ extraImagePullSecret:
   password: 6hPfVGmi9gMMhhmE5pR64xDz4ahcQnvg
 
 platform:
-  appcache:
-    host: iqgeo-memcached
-    pass: ""
-    port: 11211
-    type: memcached
-    user: ""
-  
   db:
-    db_host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
-    db_port: 5432
-    db_user: postgres
-    pg_database: vytiertf
-    verify_connectivity: true
-    existingSecret:
-      enabled: true
-      secretName: iqgeo-db-secret
-      hostKey: POSTGRES_HOST
-      portKey: POSTGRES_PORT
-      usernameKey: POSTGRES_USER
-      passwordKey: POSTGRES_PASSWORD
+    host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
+    port: 5432
+    user: postgres
+    passwordSecret: iqgeo-db-secret
 
   persistence:
-    enabled: true
-    accessMode: ReadWriteMany
     storageClass: efs-sc
     size: 50Gi
 
@@ -73,24 +56,10 @@ ingress:
       secretName: iqgeo-tls
 
 redis:
-  enabled: false
+  enabled: true
 
 memcached:
-  enabled: true
-  nameOverride: "iqgeo-memcached"
-  architecture: standalone
-  auth:
-    enabled: false
-  replicaCount: 1
-  persistence:
-    enabled: false
-  resources:
-    limits:
-      cpu: 500m
-      memory: 2Gi
-    requests:
-      cpu: 500m
-      memory: 1Gi
+  enabled: false
 
 ntm:
   enabled: true
