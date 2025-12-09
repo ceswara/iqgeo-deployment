@@ -57,6 +57,17 @@ jobs:
           kubectl get secret harbor-registry-cred -n ${{ env.NAMESPACE }} || echo "WARNING: harbor-registry-cred not found"
           kubectl get secret iqgeo-db-secret -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-db-secret not found"
           kubectl get secret iqgeo-license -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-license not found"
+      
+      - name: Prepare Harbor secret for Helm
+        if: github.event.inputs.action != 'status'
+        run: |
+          # Delete harbor-registry-cred if it exists without Helm ownership (Helm will recreate it)
+          if kubectl get secret harbor-registry-cred -n ${{ env.NAMESPACE }} &>/dev/null; then
+            if ! kubectl get secret harbor-registry-cred -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' | grep -q Helm; then
+              echo "Deleting existing harbor-registry-cred secret (Helm will recreate it)..."
+              kubectl delete secret harbor-registry-cred -n ${{ env.NAMESPACE }}
+            fi
+          fi
 
       - name: Login to Harbor Registry
         if: github.event.inputs.action != 'status'
