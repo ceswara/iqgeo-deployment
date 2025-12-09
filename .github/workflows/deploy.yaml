@@ -58,7 +58,7 @@ jobs:
           kubectl get secret iqgeo-db-secret -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-db-secret not found"
           kubectl get secret iqgeo-license -n ${{ env.NAMESPACE }} || echo "WARNING: iqgeo-license not found"
       
-      - name: Prepare Harbor secret for Helm
+      - name: Prepare resources for Helm
         if: github.event.inputs.action != 'status'
         run: |
           # Delete harbor-registry-cred if it exists without Helm ownership (Helm will recreate it)
@@ -66,6 +66,14 @@ jobs:
             if ! kubectl get secret harbor-registry-cred -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' | grep -q Helm; then
               echo "Deleting existing harbor-registry-cred secret (Helm will recreate it)..."
               kubectl delete secret harbor-registry-cred -n ${{ env.NAMESPACE }}
+            fi
+          fi
+          
+          # Delete PVC if it exists without Helm ownership (Helm will recreate it)
+          if kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} &>/dev/null; then
+            if ! kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' | grep -q Helm; then
+              echo "Deleting existing PVC (Helm will recreate it)..."
+              kubectl delete pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }}
             fi
           fi
 

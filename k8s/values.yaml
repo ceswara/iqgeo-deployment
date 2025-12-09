@@ -15,6 +15,13 @@ extraImagePullSecret:
   password: 6hPfVGmi9gMMhhmE5pR64xDz4ahcQnvg
 
 platform:
+  appcache:
+    host: iqgeo-memcached
+    pass: ""
+    port: 11211
+    type: memcached
+    user: ""
+  
   db:
     db_host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
     db_port: 5432
@@ -70,10 +77,13 @@ redis:
 
 memcached:
   enabled: true
+  nameOverride: "iqgeo-memcached"
   architecture: standalone
   auth:
     enabled: false
   replicaCount: 1
+  persistence:
+    enabled: false
   resources:
     limits:
       cpu: 500m

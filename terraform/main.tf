@@ -121,6 +121,12 @@ resource "aws_iam_role_policy" "github_runner_eks" {
   })
 }
 
+# SSM Policy for Session Manager access
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.github_runner.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 resource "aws_iam_instance_profile" "github_runner" {
   name = "github-runner-profile"
   role = aws_iam_role.github_runner.name

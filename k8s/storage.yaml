@@ -1,4 +1,5 @@
 # EFS Storage Class for IQGeo
+# Note: PVC will be created by Helm chart, not manually
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -13,18 +14,4 @@ parameters:
   basePath: "/iqgeo"
 reclaimPolicy: Retain
 volumeBindingMode: Immediate
----
-# PVC for IQGeo shared data
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: iqgeo-platform-shared-data
-  namespace: iqgeo
-spec:
-  accessModes:
-    - ReadWriteMany
-  storageClassName: efs-sc
-  resources:
-    requests:
-      storage: 50Gi
 
