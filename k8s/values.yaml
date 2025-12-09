@@ -2,50 +2,85 @@
 # Update these values according to your environment
 
 image:
-  repository: harbor.delivery.iqgeo.cloud/iqgeo
-  pullPolicy: IfNotPresent
+  repository: harbor.delivery.iqgeo.cloud/nmti-trials/editions-nmt-comms-cloud
+  tag: "7.3"
+  pullPolicy: Always
   pullSecrets:
-    - harbor-registry-cred
+    - name: harbor-registry-cred
+
+extraImagePullSecret:
+  name: harbor-registry-cred
+  registry: harbor.delivery.iqgeo.cloud
+  username: robot$techwave
+  password: 6hPfVGmi9gMMhhmE5pR64xDz4ahcQnvg
 
 platform:
   db:
-    host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
-    port: 5432
-    user: postgres
-    passwordSecret: iqgeo-db-secret
-    database: vytiertf
+    db_host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
+    db_port: 5432
+    db_user: postgres
+    pg_database: vytiertf
+    verify_connectivity: true
+    existingSecret:
+      enabled: true
+      secretName: iqgeo-db-secret
+      hostKey: POSTGRES_HOST
+      portKey: POSTGRES_PORT
+      usernameKey: POSTGRES_USER
+      passwordKey: POSTGRES_PASSWORD
 
   persistence:
+    enabled: true
+    accessMode: ReadWriteMany
     storageClass: efs-sc
     size: 50Gi
-    existingClaim: iqgeo-platform-shared-data
 
   license:
     secretName: iqgeo-license
 
 ingress:
-  enabled: false
-  # Temporarily disabled due to template error - will configure after initial deployment
-  # className: nginx
-  # hosts:
-  #   - host: iqgeo.example.com
-  #     paths:
-  #       - path: /
-  #         pathType: Prefix
+  enabled: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/issuer-kind: ClusterIssuer
+    ingress.kubernetes.io/ssl-redirect: "true"
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: 100m
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "1200"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "1200"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "1200"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.org/client-max-body-size: 100m
+  hosts:
+    - host: iqgeo.example.com
+      paths:
+        - backend:
+            port:
+              number: 80
+          path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - iqgeo.example.com
+      secretName: iqgeo-tls
 
 redis:
+  enabled: false
+
+memcached:
   enabled: true
   architecture: standalone
   auth:
     enabled: false
-  master:
-    persistence:
-      enabled: true
-      storageClass: efs-sc
-      size: 8Gi
-
-memcached:
-  enabled: false
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
 
 ntm:
   enabled: true
