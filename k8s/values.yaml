@@ -24,18 +24,14 @@ platform:
     secretName: iqgeo-license
 
 ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-  hosts:
-    - host: iqgeo.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+  enabled: false
+  # Temporarily disabled due to template error - will configure after initial deployment
+  # className: nginx
+  # hosts:
+  #   - host: iqgeo.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
 
 redis:
   enabled: true
