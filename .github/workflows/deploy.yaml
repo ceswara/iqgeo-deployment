@@ -62,7 +62,7 @@ jobs:
         if: github.event.inputs.action != 'status'
         run: |
           echo "Logging into Harbor registry..."
-          # This will use the imagePullSecrets configured in the cluster
+          echo "${{ secrets.HARBOR_PASSWORD }}" | helm registry login harbor.delivery.iqgeo.cloud -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
 
       - name: Deploy IQGeo Platform (Helm)
         if: github.event.inputs.action == 'deploy' || github.event.inputs.action == 'upgrade' || github.event_name == 'push'
@@ -74,7 +74,7 @@ jobs:
             CHART_PATH="charts/iqgeo-platform.tgz"
           else
             echo "Pulling IQGeo Helm chart from Harbor..."
-            helm registry login harbor.delivery.iqgeo.cloud -u ${{ secrets.HARBOR_USERNAME }} -p ${{ secrets.HARBOR_PASSWORD }} || true
+            echo "${{ secrets.HARBOR_PASSWORD }}" | helm registry login harbor.delivery.iqgeo.cloud -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin || true
             helm pull oci://harbor.delivery.iqgeo.cloud/helm/iqgeo-platform --destination charts/ || true
             CHART_PATH=$(ls charts/iqgeo-platform*.tgz 2>/dev/null | head -1)
           fi
