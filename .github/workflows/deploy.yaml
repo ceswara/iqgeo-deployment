@@ -117,6 +117,12 @@ jobs:
             sleep 5
           fi
           
+          # Delete deployments to fix pullSecrets format conflicts (Helm will recreate them)
+          echo "Deleting existing deployments to fix pullSecrets format conflicts..."
+          kubectl delete deployment iqgeo-platform -n ${{ env.NAMESPACE }} --cascade=orphan || true
+          kubectl delete deployment iqgeo-iqgeo-memcached -n ${{ env.NAMESPACE }} --cascade=orphan || true
+          sleep 3
+          
           # Check if Helm chart exists locally or needs to be pulled
           if [ -f "charts/iqgeo-platform.tgz" ]; then
             CHART_PATH="charts/iqgeo-platform.tgz"

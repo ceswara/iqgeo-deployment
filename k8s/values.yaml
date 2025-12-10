@@ -6,7 +6,7 @@ image:
   tag: "7.3"
   pullPolicy: Always
   pullSecrets:
-    - name: harbor-registry-cred
+    - harbor-registry-cred
 
 platform:
   db:
