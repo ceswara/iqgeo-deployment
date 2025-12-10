@@ -54,6 +54,16 @@ ingress:
               name: iqgeo-platform
             port:
               number: 80
+    # Allow access without specific host (for direct LB access)
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: iqgeo-platform
+            port:
+              number: 80
   tls:
     - hosts:
         - iqgeo.example.com
