@@ -10,10 +10,14 @@ image:
 
 platform:
   db:
-    host: vytiertf.cchyjvuq3inp.us-east-1.rds.amazonaws.com
-    port: 5432
-    user: postgres
-    passwordSecret: iqgeo-db-secret
+    existingSecret:
+      enabled: true
+      secretName: iqgeo-db-secret
+      hostKey: POSTGRES_HOST
+      portKey: POSTGRES_PORT
+      usernameKey: POSTGRES_USER
+      passwordKey: POSTGRES_PASSWORD
+      instanceKey: POSTGRES_HOST
 
   persistence:
     storageClass: efs-sc
