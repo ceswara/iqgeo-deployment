@@ -30,6 +30,11 @@ jobs:
     runs-on: self-hosted
 
     steps:
+      - name: Cleanup previous runs
+        run: |
+          sudo rm -rf ${{ github.workspace }}/.kube || true
+          sudo chown -R runner:runner ${{ github.workspace }} || true
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -40,6 +45,7 @@ jobs:
 
       - name: Update kubeconfig
         run: |
+          mkdir -p ~/.kube
           aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
           kubectl cluster-info
 
