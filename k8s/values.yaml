@@ -1,12 +1,16 @@
 # IQGeo Platform Helm Values
 # Update these values according to your environment
 
+global:
+  imagePullSecrets:
+    - name: harbor-registry-cred
+
 image:
   repository: harbor.delivery.iqgeo.cloud/nmti-trials/editions-nmt-comms-cloud
   tag: "7.3"
   pullPolicy: Always
   pullSecrets:
-    - harbor-registry-cred
+    - name: harbor-registry-cred
 
 platform:
   db:
