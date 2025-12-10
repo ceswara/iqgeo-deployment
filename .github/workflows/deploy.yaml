@@ -66,27 +66,36 @@ jobs:
         if: github.event.inputs.action != 'status'
         run: |
           echo "Waiting for cert-manager webhook to be ready..."
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cert-manager-webhook -n cert-manager --timeout=60s || true
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cert-manager-webhook -n cert-manager --timeout=120s || echo "Webhook check completed"
           
-          echo "Applying ClusterIssuer..."
-          for i in {1..5}; do
-            if kubectl apply -f k8s/clusterissuer.yaml; then
+          echo "Checking webhook service..."
+          kubectl get svc cert-manager-webhook -n cert-manager || echo "Webhook service check"
+          
+          echo "Applying ClusterIssuer using server-side apply..."
+          for i in {1..10}; do
+            if kubectl apply --server-side --force-conflicts -f k8s/clusterissuer.yaml 2>&1; then
               echo "ClusterIssuer applied successfully"
               break
+            elif kubectl apply -f k8s/clusterissuer.yaml 2>&1 | grep -q "already exists"; then
+              echo "ClusterIssuer already exists, continuing..."
+              break
             else
-              echo "Attempt $i failed, retrying in 5 seconds..."
-              sleep 5
+              echo "Attempt $i failed, waiting 10 seconds before retry..."
+              sleep 10
             fi
           done
           
-          echo "Applying Certificate..."
-          for i in {1..5}; do
-            if kubectl apply -f k8s/certificate.yaml; then
+          echo "Applying Certificate using server-side apply..."
+          for i in {1..10}; do
+            if kubectl apply --server-side --force-conflicts -f k8s/certificate.yaml 2>&1; then
               echo "Certificate applied successfully"
               break
+            elif kubectl apply -f k8s/certificate.yaml 2>&1 | grep -q "already exists"; then
+              echo "Certificate already exists, continuing..."
+              break
             else
-              echo "Attempt $i failed, retrying in 5 seconds..."
-              sleep 5
+              echo "Attempt $i failed, waiting 10 seconds before retry..."
+              sleep 10
             fi
           done
           
