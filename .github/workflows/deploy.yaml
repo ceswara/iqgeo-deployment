@@ -148,6 +148,33 @@ jobs:
           kubectl delete job --all -n ${{ env.NAMESPACE }} || true
           sleep 3
           
+          # Final check: Delete PVC if it still exists (must be done right before Helm upgrade)
+          echo "Final check: Ensuring PVC is deleted before Helm upgrade..."
+          if kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} &>/dev/null; then
+            echo "WARNING: PVC still exists, deleting it now..."
+            # Delete any pods using the PVC
+            kubectl get pods -n ${{ env.NAMESPACE }} -o json 2>/dev/null | jq -r '.items[] | select(.spec.volumes[]?.persistentVolumeClaim.claimName=="iqgeo-platform-shared-data") | .metadata.name' 2>/dev/null | while read pod; do
+              if [ -n "$pod" ]; then
+                echo "Force deleting pod $pod..."
+                kubectl delete pod "$pod" -n ${{ env.NAMESPACE }} --grace-period=0 --force || true
+              fi
+            done
+            sleep 2
+            # Delete the PVC
+            kubectl delete pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} --wait=false || true
+            # Wait for deletion
+            for i in {1..20}; do
+              if ! kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} &>/dev/null; then
+                echo "PVC deleted successfully"
+                break
+              fi
+              sleep 1
+            done
+            sleep 2
+          else
+            echo "PVC does not exist, proceeding with Helm upgrade"
+          fi
+          
           # Check if Helm chart exists locally or needs to be pulled
           if [ -f "charts/iqgeo-platform.tgz" ]; then
             CHART_PATH="charts/iqgeo-platform.tgz"
