@@ -50,8 +50,8 @@ ingress:
           backend:
             service:
               name: iqgeo-platform
-              port:
-                number: 80
+            port:
+              number: 80
   tls:
     - hosts:
         - iqgeo.example.com
