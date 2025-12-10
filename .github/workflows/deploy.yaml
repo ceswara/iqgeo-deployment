@@ -70,10 +70,21 @@ jobs:
           fi
           
           # Delete PVC if it exists without Helm ownership (Helm will recreate it)
+          # PVCs are immutable once bound, so we must delete and recreate
           if kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} &>/dev/null; then
-            if ! kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' | grep -q Helm; then
-              echo "Deleting existing PVC (Helm will recreate it)..."
-              kubectl delete pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }}
+            MANAGED_BY=$(kubectl get pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+            if [ "$MANAGED_BY" != "Helm" ]; then
+              echo "Deleting existing PVC (not Helm-managed, Helm will recreate it)..."
+              # Delete pods using this PVC first
+              kubectl get pods -n ${{ env.NAMESPACE }} -o json | jq -r '.items[] | select(.spec.volumes[]?.persistentVolumeClaim.claimName=="iqgeo-platform-shared-data") | .metadata.name' | while read pod; do
+                if [ -n "$pod" ]; then
+                  echo "Deleting pod $pod that uses the PVC..."
+                  kubectl delete pod "$pod" -n ${{ env.NAMESPACE }} --grace-period=0 --force || true
+                fi
+              done
+              sleep 2
+              kubectl delete pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }} || true
+              sleep 2
             fi
           fi
           
