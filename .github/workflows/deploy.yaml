@@ -76,6 +76,14 @@ jobs:
               kubectl delete pvc iqgeo-platform-shared-data -n ${{ env.NAMESPACE }}
             fi
           fi
+          
+          # Delete Redis StatefulSet if it exists and is not managed by Helm (Helm will recreate it)
+          if kubectl get statefulset iqgeo-redis-master -n ${{ env.NAMESPACE }} &>/dev/null; then
+            if ! kubectl get statefulset iqgeo-redis-master -n ${{ env.NAMESPACE }} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' | grep -q Helm; then
+              echo "Deleting existing Redis StatefulSet (Helm will recreate it)..."
+              kubectl delete statefulset iqgeo-redis-master -n ${{ env.NAMESPACE }} --cascade=orphan
+            fi
+          fi
 
       - name: Login to Harbor Registry
         if: github.event.inputs.action != 'status'
