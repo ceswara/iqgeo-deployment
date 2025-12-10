@@ -56,6 +56,12 @@ jobs:
         run: |
           kubectl apply -f k8s/memcached-service-alias.yaml
 
+      - name: Apply certificate configuration
+        if: github.event.inputs.action != 'status'
+        run: |
+          kubectl apply -f k8s/clusterissuer.yaml
+          kubectl apply -f k8s/certificate.yaml
+
       - name: Check secrets exist
         run: |
           echo "Checking if required secrets exist..."
