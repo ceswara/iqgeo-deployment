@@ -51,6 +51,11 @@ jobs:
         run: |
           kubectl apply -f k8s/storage.yaml
 
+      - name: Apply memcached service alias
+        if: github.event.inputs.action != 'status'
+        run: |
+          kubectl apply -f k8s/memcached-service-alias.yaml
+
       - name: Check secrets exist
         run: |
           echo "Checking if required secrets exist..."
