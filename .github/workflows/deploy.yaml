@@ -66,7 +66,7 @@ jobs:
         if: github.event.inputs.action != 'status'
         run: |
           echo "Waiting for cert-manager webhook to be ready..."
-          kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cert-manager-webhook -n cert-manager --timeout=120s || echo "Webhook check completed"
+          kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook,app.kubernetes.io/name=webhook -n cert-manager --timeout=120s || echo "Webhook check completed"
           
           echo "Checking webhook service..."
           kubectl get svc cert-manager-webhook -n cert-manager || echo "Webhook service check"
