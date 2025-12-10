@@ -9,5 +9,5 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-  - iqgeo.example.com
+  - uat-tf.iqgeo.xyz
 

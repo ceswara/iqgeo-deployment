@@ -45,7 +45,7 @@ ingress:
     nginx.org/client-max-body-size: 100m
   className: nginx
   hosts:
-    - host: iqgeo.example.com
+    - host: uat-tf.iqgeo.xyz
       paths:
         - path: /
           pathType: Prefix
@@ -66,7 +66,7 @@ ingress:
               number: 80
   tls:
     - hosts:
-        - iqgeo.example.com
+        - uat-tf.iqgeo.xyz
       secretName: iqgeo-tls
 
 redis:
