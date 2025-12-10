@@ -107,6 +107,16 @@ jobs:
         run: |
           echo "Deploying IQGeo Platform..."
           
+          # Delete Redis StatefulSet if it exists (Helm will recreate it)
+          # StatefulSets have restrictions on updates, so we need to delete and recreate
+          if kubectl get statefulset iqgeo-redis-master -n ${{ env.NAMESPACE }} &>/dev/null; then
+            echo "Deleting existing Redis StatefulSet (Helm will recreate it with correct config)..."
+            kubectl delete statefulset iqgeo-redis-master -n ${{ env.NAMESPACE }} --cascade=orphan || true
+            # Also delete the pods
+            kubectl delete pods -l app.kubernetes.io/name=redis,app.kubernetes.io/instance=iqgeo -n ${{ env.NAMESPACE }} || true
+            sleep 5
+          fi
+          
           # Check if Helm chart exists locally or needs to be pulled
           if [ -f "charts/iqgeo-platform.tgz" ]; then
             CHART_PATH="charts/iqgeo-platform.tgz"
