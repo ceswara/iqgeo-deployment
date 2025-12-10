@@ -192,7 +192,7 @@ jobs:
               --create-namespace \
               --force \
               --wait \
-              --timeout 10m
+              --timeout 30m
           else
             echo "No Helm chart found. Skipping Helm deployment."
             echo "Please place the IQGeo Helm chart in charts/ directory"
