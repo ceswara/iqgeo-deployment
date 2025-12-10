@@ -121,6 +121,11 @@ jobs:
           echo "Deleting existing deployments to fix pullSecrets format conflicts..."
           kubectl delete deployment iqgeo-platform -n ${{ env.NAMESPACE }} --cascade=orphan || true
           kubectl delete deployment iqgeo-iqgeo-memcached -n ${{ env.NAMESPACE }} --cascade=orphan || true
+          
+          # Delete cronjobs and jobs (they also have pullSecrets format issues)
+          echo "Deleting existing cronjobs and jobs..."
+          kubectl delete cronjob --all -n ${{ env.NAMESPACE }} || true
+          kubectl delete job --all -n ${{ env.NAMESPACE }} || true
           sleep 3
           
           # Check if Helm chart exists locally or needs to be pulled
@@ -138,6 +143,7 @@ jobs:
               -f k8s/values.yaml \
               --namespace ${{ env.NAMESPACE }} \
               --create-namespace \
+              --force \
               --wait \
               --timeout 10m
           else
