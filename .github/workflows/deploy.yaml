@@ -68,8 +68,25 @@ jobs:
           echo "Waiting for cert-manager webhook to be ready..."
           kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=webhook,app.kubernetes.io/name=webhook -n cert-manager --timeout=120s || echo "Webhook check completed"
           
+          echo "Waiting for webhook serving certificate to be ready..."
+          for i in {1..30}; do
+            WEBHOOK_POD=$(kubectl get pods -n cert-manager -l app.kubernetes.io/component=webhook,app.kubernetes.io/name=webhook -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+            if [ -n "$WEBHOOK_POD" ]; then
+              CERT_ERROR=$(kubectl logs $WEBHOOK_POD -n cert-manager --tail=10 2>&1 | grep -i "no tls.Certificate available" || echo "")
+              if [ -z "$CERT_ERROR" ]; then
+                echo "Webhook certificate is ready!"
+                break
+              fi
+            fi
+            echo "Waiting for webhook certificate... ($i/30)"
+            sleep 4
+          done
+          
           echo "Checking webhook service..."
           kubectl get svc cert-manager-webhook -n cert-manager || echo "Webhook service check"
+          
+          echo "Testing webhook connectivity..."
+          kubectl run -it --rm test-webhook-ready --image=curlimages/curl --restart=Never -n cert-manager -- timeout 5 curl -k https://cert-manager-webhook.cert-manager.svc:443/healthz 2>&1 | head -3 || echo "Webhook connectivity test"
           
           echo "Applying ClusterIssuer using server-side apply..."
           for i in {1..10}; do
