@@ -59,7 +59,8 @@ redis:
   enabled: true
 
 memcached:
-  enabled: false
+  enabled: true
+  nameOverride: "iqgeo-memcached"
 
 ntm:
   enabled: true
