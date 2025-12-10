@@ -14,6 +14,6 @@ spec:
       protocol: TCP
       name: memcache
   selector:
-    app.kubernetes.io/name: memcached
+    app.kubernetes.io/name: iqgeo-memcached
     app.kubernetes.io/instance: iqgeo
 
