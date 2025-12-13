@@ -42,6 +42,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "1200"
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/whitelist-source-range: "YOUR_IP_ADDRESSES_HERE"  # Replace with comma-separated IP addresses or CIDR blocks, e.g., "1.2.3.4/32,5.6.7.0/24"
     nginx.org/client-max-body-size: 100m
   className: nginx
   hosts:
